@@ -28,18 +28,28 @@ function generateAnchorURL(url, anchor) {
   return anchor.id ? `${url}#${anchor.id}` : url;
 }
 
+function isModifiedClick(event) {
+  return (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  );
+}
 function scrollTop(event) {
-  // there're two cases
-  // 1. location.pathname or location.hash changes which will be handled by useEffect in Page.jsx
-  // 2. location.pathname and location.hash doesn't change at all
-  if (window.location.hash !== "") {
-    // case 1
+  // Modified clicks should retain their normal browser behavior.
+  if (isModifiedClick(event)) {
     return;
   }
-  if (!event.metaKey && !event.ctrlKey) {
-    // case 2
-    window.scrollTo(0, 0);
+
+  // Navigation changes are handled by Page.jsx.
+  // Only handle clicks when the URL does not change.
+  if (window.location.hash !== "") {
+    return;
   }
+
+  window.scrollTo(0, 0);
 }
 
 function Anchors({ anchors, url }) {
@@ -54,20 +64,38 @@ function Anchors({ anchors, url }) {
           <NavLink
             to={generateAnchorURL(url, anchor)}
             className="text-[#2b3a42] hover:text-[#175d96] dark:text-[#b8b8b8] dark:hover:text-[#82b7f6]"
-            onClick={() => {
+            onClick={(event) => {
+              if (isModifiedClick(event)) {
+                return;
+              }
+
+              let currentHash;
+
+              try {
+                currentHash = decodeURIComponent(window.location.hash.slice(1));
+              } catch {
+                return;
+              }
+
               if (
                 window.location.pathname === url &&
-                window.location.hash === `#${anchor.id}`
+                currentHash === anchor.id
               ) {
                 window.setTimeout(() => {
                   const target = document.getElementById(anchor.id);
-                  const heading = target?.closest("h1, h2, h3, h4, h5, h6");
+
+                  if (!target) {
+                    return;
+                  }
+
+                  const heading = target.closest("h1, h2, h3, h4, h5, h6");
 
                   if (heading) {
                     heading.setAttribute("tabindex", "-1");
                     heading.focus({ preventScroll: true });
-                    target.scrollIntoView();
                   }
+
+                  target.scrollIntoView();
                 }, 0);
               }
             }}

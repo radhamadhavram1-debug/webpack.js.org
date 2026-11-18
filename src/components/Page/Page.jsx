@@ -19,26 +19,25 @@ function focusHeadingFromHash(hash) {
     return false;
   }
 
-  // The ID belongs to a span inside the actual heading.
+  // The ID may belong to a span inside the actual heading.
   const heading = target.closest("h1, h2, h3, h4, h5, h6");
 
-  if (!heading) {
-    return false;
+  if (heading) {
+    // Allow programmatic focus without adding the heading
+    // to the normal Tab navigation order.
+    heading.setAttribute("tabindex", "-1");
+
+    // Move focus without changing the current scroll position.
+    heading.focus({ preventScroll: true });
   }
 
-  // Allow programmatic focus without adding the heading
-  // to the normal Tab navigation order.
-  heading.setAttribute("tabindex", "-1");
-
-  // Move focus without changing the current scroll position.
-  heading.focus({ preventScroll: true });
-
-  // Scroll the original anchor span into view.
+  // Always scroll to the original anchor target.
   // This preserves the existing sticky-header offset.
   target.scrollIntoView();
 
   return true;
 }
+
 // Load Styling
 
 export default function Page(props) {
@@ -105,7 +104,7 @@ export default function Page(props) {
           observer.observe(target, {
             childList: true,
             attributes: false,
-            subtree: false,
+            subtree: true,
           });
         }
       } else {
